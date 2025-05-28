@@ -123,13 +123,19 @@ found:
   p->state = USED;
 
   // Need to set what thread ID and parent is
-
-  // Need to be able to share parent address space
-
-
+  p->thread_id = par->next_tid++;
+  p->parent = par;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
+
+  // Map trapframe for new thread within same space
+  uint64 trapframe_addr = TRAPFRAME - (p->thread_id * PGSIZE);
+  if (mappages(par->pagetable, trapframe_addr, PGSIZE, (uint64)p->trapframe, PTE_R | PTE_W) < 0) {
     freeproc(p);
     release(&p->lock);
     return 0;
@@ -144,7 +150,7 @@ found:
   // }
 
   // Set up pagetable to share parent's address space
-
+  p->pagetable = par->pagetable;
 
 
   // Set up new context to start executing at forkret,
