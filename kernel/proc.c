@@ -136,6 +136,7 @@ found:
   // Map trapframe for new thread within same space
   uint64 trapframe_addr = TRAPFRAME - (p->thread_id * PGSIZE);
   if (mappages(par->pagetable, trapframe_addr, PGSIZE, (uint64)p->trapframe, PTE_R | PTE_W) < 0) {
+    kfree((void*)p->trapframe);
     freeproc(p);
     release(&p->lock);
     return 0;
