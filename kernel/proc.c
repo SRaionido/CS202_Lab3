@@ -168,6 +168,8 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
+  p->thread_id = 0; // Lab 3: Initialize thread ID
+  p->next_tid = 1; // Lab 3: Initialize next thread ID
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){

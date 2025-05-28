@@ -105,4 +105,5 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int thread_id;              // Lab 3 - Thread ID
+  int next_tid;               // Lab 3 - Next thread ID
 };
