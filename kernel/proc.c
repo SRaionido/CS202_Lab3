@@ -122,6 +122,12 @@ found:
   p->pid = allocpid();
   p->state = USED;
 
+  // Need to set what thread ID and parent is
+
+  // Need to be able to share parent address space
+
+
+
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
@@ -129,13 +135,17 @@ found:
     return 0;
   }
 
-  // An empty user page table.
-  p->pagetable = proc_pagetable(p);
-  if(p->pagetable == 0){
-    freeproc(p);
-    release(&p->lock);
-    return 0;
-  }
+  // // An empty user page table.
+  // p->pagetable = proc_pagetable(p);
+  // if(p->pagetable == 0){
+  //   freeproc(p);
+  //   release(&p->lock);
+  //   return 0;
+  // }
+
+  // Set up pagetable to share parent's address space
+
+
 
   // Set up new context to start executing at forkret,
   // which returns to user space.
