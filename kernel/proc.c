@@ -760,16 +760,25 @@ int clone(void *stack)
   if(nt == 0) return -1;
 
   // Copy the parent registers
+  *(nt->trapframe) = *(p->trapframe);
 
   // Set stack pointer
+  nt->trapframe->sp = (uint64)stack;
 
   // Cause clone to return 0 in the child.
+  nt->trapframe->a0 = 0;
 
   // Copy over context
+  nt->context.ra = (uint64)forkret;
+  nt->context.sp = nt->kstack + PGSIZE;
+  
+  int pid = nt->pid;
+  release(&nt->lock);
 
   // Mark thread as runnable
-
-  int pid = 0;
-
+  acquire(&wait_lock);
+  nt->state = RUNNABLE;
+  release(&wait_lock);
+  
   return pid;
 }
