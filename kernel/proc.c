@@ -106,6 +106,7 @@ allocpid()
 static struct proc*
 allocproc_thread(struct proc *par)
 {
+  // printf("IN ALLOCPROC_THREAD\n");
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -124,6 +125,7 @@ found:
 
   // Need to set what thread ID and parent is
   p->thread_id = par->next_tid++;
+  // par->next_tid = par->thread_id + 1; // Increment parent's next thread ID
   p->parent = par;
 
   // Allocate a trapframe page.
@@ -159,6 +161,8 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
+
+  printf("ABOUT TO RETRUN P\n");
 
   return p;
 }
@@ -233,6 +237,8 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+  p->thread_id = 0; // Lab 3: Reset thread ID
+  p->next_tid = 0;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -754,6 +760,7 @@ void print_hello(int n)
 
 int clone(void *stack)
 {
+  printf("IN CLONE\n");
   struct proc *p = myproc();
   if ((uint64)stack % PGSIZE != 0 || stack == 0) return -1;
 
