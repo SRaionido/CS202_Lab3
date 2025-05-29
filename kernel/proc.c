@@ -750,3 +750,26 @@ void print_hello(int n)
 {
   printf("Hello from the kernel space %d\n", n);
 }
+
+int clone(void *stack)
+{
+  struct proc *p = myproc();
+  if ((uint64)stack % PGSIZE != 0 || stack == 0) return -1;
+
+  struct proc *nt = allocproc_thread(p);
+  if(nt == 0) return -1;
+
+  // Copy the parent registers
+
+  // Set stack pointer
+
+  // Cause clone to return 0 in the child.
+
+  // Copy over context
+
+  // Mark thread as runnable
+
+  int pid = 0;
+
+  return pid;
+}

@@ -22,6 +22,7 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int clone(void* stack); // Lab 3: clone syscall
 
 // ulib.c
 int stat(const char*, struct stat*);

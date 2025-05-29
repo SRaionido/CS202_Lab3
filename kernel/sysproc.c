@@ -97,3 +97,15 @@ uint64 sys_hello(void)  //hello syscall definition
   print_hello(n);
   return 0;
 }
+
+uint64 sys_clone(void)
+{
+  uint64 stack;
+  argaddr(0, &stack);
+  
+  if (stack == 0 ) {
+    return -1; // Invalid stack pointer
+  }
+
+  return clone((void*)stack);
+}
