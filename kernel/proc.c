@@ -221,7 +221,8 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
-  if(p->pagetable)
+  // Lab 3: Updated to free only per-thread pagetable
+  if(p->thread_id == 0 && p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
   p->pagetable = 0;
   p->sz = 0;
@@ -779,6 +780,6 @@ int clone(void *stack)
   acquire(&wait_lock);
   nt->state = RUNNABLE;
   release(&wait_lock);
-  
+
   return pid;
 }
