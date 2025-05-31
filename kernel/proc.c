@@ -106,7 +106,7 @@ allocpid()
 static struct proc*
 allocproc_thread(struct proc *par)
 {
-  // printf("IN ALLOCPROC_THREAD\n");
+  printf("IN ALLOCPROC_THREAD\n");
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -135,6 +135,8 @@ found:
     return 0;
   }
 
+  // TIP 3: Mapping the trapframe page for the new thread
+  // TIP 6: NOT Mapping trampoline, only trapframe
   // Map trapframe for new thread within same space
   uint64 trapframe_addr = TRAPFRAME - (p->thread_id * PGSIZE);
   if (mappages(par->pagetable, trapframe_addr, PGSIZE, (uint64)p->trapframe, PTE_R | PTE_W) < 0) {
@@ -152,6 +154,15 @@ found:
   //   return 0;
   // }
 
+  //Set up kernel stack?
+  // p->kstack = (uint64)kalloc();
+  // if(p->kstack == 0){
+  //   kfree((void*)p->trapframe);
+  //   freeproc(p);
+  //   release(&p->lock);
+  //   return 0;
+  // }
+
   // Set up pagetable to share parent's address space
   p->pagetable = par->pagetable;
 
@@ -162,7 +173,7 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
-  printf("ABOUT TO RETRUN P\n");
+  printf("ABOUT TO RETURN P\n");
 
   return p;
 }
@@ -225,9 +236,12 @@ freeproc(struct proc *p)
   if(p->trapframe)
     kfree((void*)p->trapframe);
   p->trapframe = 0;
+  //TIP 7: Editing freeproc to free pagetable only for parent
   // Lab 3: Updated to free only per-thread pagetable
+  printf("GOING TO FREE PAGETABLE\n");
   if(p->thread_id == 0 && p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
+  printf("FREED PAGETABLE\n");
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -467,24 +481,32 @@ wait(uint64 addr)
   acquire(&wait_lock);
 
   for(;;){
+    printf("IN WAIT FUNCT\n");
     // Scan through table looking for exited children.
     havekids = 0;
     for(pp = proc; pp < &proc[NPROC]; pp++){
+      printf("IN WAIT FOR LOOP\n");
       if(pp->parent == p){
         // make sure the child isn't still in exit() or swtch().
         acquire(&pp->lock);
+
+        printf("IN WAIT FOR LOOP - ACQUIRED LOCK\n");
 
         havekids = 1;
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
+          printf("FOUND A ZOMBIE PROC\n");
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
                                   sizeof(pp->xstate)) < 0) {
             release(&pp->lock);
             release(&wait_lock);
+            printf("ERROR COPYING OUT XSTATE\n");
             return -1;
           }
+          printf("ABOUT TO FREEPROC\n");
           freeproc(pp);
+          printf("FREED PROC\n");
           release(&pp->lock);
           release(&wait_lock);
           return pid;
@@ -760,17 +782,30 @@ void print_hello(int n)
 
 int clone(void *stack)
 {
-  printf("IN CLONE\n");
+  // printf("IN CLONE\n");
   struct proc *p = myproc();
-  if ((uint64)stack % PGSIZE != 0 || stack == 0) return -1;
+  if ((uint64)stack % PGSIZE != 0 || stack == 0) {
+    printf("clone: stack must be page-aligned and non-null\n");
+    return -1;
+  }
 
+  // TIP 3: HAPPENS IN allocproc_thread()
   struct proc *nt = allocproc_thread(p);
+  // printf("ALLOCPROC_THREAD RETURNED %p\n", nt);
   if(nt == 0) return -1;
+
+  if (walkaddr(p->pagetable, (uint64)stack) == 0) {
+    printf("clone: stack pointer is not mapped in user space\n");
+    return -1;
+  }
+
+  if(nt->trapframe == 0)
+    panic("allocproc_thread: trapframe allocation failed");
 
   // Copy the parent registers
   *(nt->trapframe) = *(p->trapframe);
 
-  // Set stack pointer
+  // TIP 2: Setting the starting address of the user stack
   nt->trapframe->sp = (uint64)stack;
 
   // Cause clone to return 0 in the child.
@@ -781,12 +816,20 @@ int clone(void *stack)
   nt->context.sp = nt->kstack + PGSIZE;
   
   int pid = nt->pid;
-  release(&nt->lock);
+
+
+  acquire(&wait_lock);
+  nt->parent = p;
+  release(&wait_lock);
 
   // Mark thread as runnable
   acquire(&wait_lock);
   nt->state = RUNNABLE;
   release(&wait_lock);
+
+  release(&nt->lock);
+
+  printf("Thread %d created with stack at %p\n", nt->thread_id, stack);
 
   return pid;
 }

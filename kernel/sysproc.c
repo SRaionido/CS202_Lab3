@@ -100,10 +100,11 @@ uint64 sys_hello(void)  //hello syscall definition
 
 uint64 sys_clone(void)
 {
-  uint64 stack;
+  uint64 stack = 0;
   argaddr(0, &stack);
   
   if (stack == 0 ) {
+    printf("clone: stack must be non-null\n");
     return -1; // Invalid stack pointer
   }
 

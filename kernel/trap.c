@@ -80,6 +80,7 @@ usertrap(void)
   if(which_dev == 2)
     yield();
 
+  // printf("usertrapret: pid=%d, thread_id=%d, tf=%p\n", p->pid, p->thread_id, p->trapframe);
   usertrapret();
 }
 
@@ -126,6 +127,8 @@ usertrapret(void)
   // switches to the user page table, restores user registers,
   // and switches to user mode with sret.
   uint64 trampoline_userret = TRAMPOLINE + (userret - trampoline);
+  
+  // TIP 4: CHANGING FORMAT for userstrapret
   if (p->thread_id > 0) {
     // printf("IN THREAD\n");
     ((void (*)(uint64, uint64))trampoline_userret)(TRAPFRAME - PGSIZE * p->thread_id, satp);
