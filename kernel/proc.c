@@ -106,7 +106,7 @@ allocpid()
 static struct proc*
 allocproc_thread(struct proc *par)
 {
-  printf("IN ALLOCPROC_THREAD\n");
+  // printf("IN ALLOCPROC_THREAD\n");
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -165,7 +165,7 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
-  printf("ABOUT TO RETURN P\n");
+  // printf("ABOUT TO RETURN P\n");
 
   return p;
 }
@@ -232,13 +232,13 @@ freeproc(struct proc *p)
   // Lab 3: Updated to free only per-thread pagetable
   // printf("GOING TO FREE PAGETABLE\n");
   if(p->thread_id == 0 && p->pagetable) {
-    printf("GOING TO FREE PAGETABLE\n");
-    printf("proc_freepagetable called for pagetable %p sz=%d\n", p->pagetable, p->sz);
+    // printf("GOING TO FREE PAGETABLE\n");
+    // printf("proc_freepagetable called for pagetable %p sz=%d\n", p->pagetable, p->sz);
     proc_freepagetable(p->pagetable, p->sz);
-    printf("FREED PAGETABLE\n");
+    // printf("FREED PAGETABLE\n");
   }
   else {
-    printf("FREEING THREAD TRAPFRAME\n");
+    // printf("FREEING THREAD TRAPFRAME\n");
     uvmunmap(p->pagetable, TRAPFRAME - (p->thread_id * PGSIZE), 1, 0);
   }
   p->pagetable = 0;
@@ -489,23 +489,23 @@ wait(uint64 addr)
         // make sure the child isn't still in exit() or swtch().
         acquire(&pp->lock);
 
-        printf("IN WAIT FOR LOOP - ACQUIRED LOCK\n");
+        // printf("IN WAIT FOR LOOP - ACQUIRED LOCK\n");
 
         havekids = 1;
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
-          printf("FOUND A ZOMBIE PROC\n");
+          // printf("FOUND A ZOMBIE PROC\n");
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
                                   sizeof(pp->xstate)) < 0) {
             release(&pp->lock);
             release(&wait_lock);
-            printf("ERROR COPYING OUT XSTATE\n");
+            // printf("ERROR COPYING OUT XSTATE\n");
             return -1;
           }
-          printf("ABOUT TO FREEPROC\n");
+          // printf("ABOUT TO FREEPROC\n");
           freeproc(pp);
-          printf("FREED PROC\n");
+          // printf("FREED PROC\n");
           release(&pp->lock);
           release(&wait_lock);
           return pid;
@@ -843,7 +843,7 @@ int clone(void *stack)
 
   release(&nt->lock);
 
-  printf("Thread %d created with stack at %p\n", nt->thread_id, stack);
+  // printf("Thread %d created with stack at %p\n", nt->thread_id, stack);
 
   return pid;
 }
