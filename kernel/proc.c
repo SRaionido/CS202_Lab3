@@ -238,10 +238,11 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   //TIP 7: Editing freeproc to free pagetable only for parent
   // Lab 3: Updated to free only per-thread pagetable
-  printf("GOING TO FREE PAGETABLE\n");
-  if(p->thread_id == 0 && p->pagetable)
+  // printf("GOING TO FREE PAGETABLE\n");
+  if(p->thread_id == 0 && p->pagetable) {
+    printf("GOING TO FREE PAGETABLE\n");
     proc_freepagetable(p->pagetable, p->sz);
-  printf("FREED PAGETABLE\n");
+  }
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -481,11 +482,11 @@ wait(uint64 addr)
   acquire(&wait_lock);
 
   for(;;){
-    printf("IN WAIT FUNCT\n");
+    // printf("IN WAIT FUNCT\n");
     // Scan through table looking for exited children.
     havekids = 0;
     for(pp = proc; pp < &proc[NPROC]; pp++){
-      printf("IN WAIT FOR LOOP\n");
+      // printf("IN WAIT FOR LOOP\n");
       if(pp->parent == p){
         // make sure the child isn't still in exit() or swtch().
         acquire(&pp->lock);
@@ -799,6 +800,13 @@ int clone(void *stack)
     return -1;
   }
 
+  // if(uvmcopy(p->pagetable, nt->pagetable, p->sz) < 0){
+  //   freeproc(nt);
+  //   release(&nt->lock);
+  //   return -1;
+  // }
+  nt->sz = p->sz;
+
   if(nt->trapframe == 0)
     panic("allocproc_thread: trapframe allocation failed");
 
@@ -810,6 +818,14 @@ int clone(void *stack)
 
   // Cause clone to return 0 in the child.
   nt->trapframe->a0 = 0;
+
+  for(int i = 0; i < NOFILE; i++) {
+    if(p->ofile[i]) {
+      nt->ofile[i] = filedup(p->ofile[i]);
+    }
+  }
+  nt->cwd = idup(p->cwd);
+  safestrcpy(nt->name, p->name, sizeof(p->name));
 
   // Copy over context
   nt->context.ra = (uint64)forkret;
