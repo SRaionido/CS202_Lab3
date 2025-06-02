@@ -783,7 +783,7 @@ int clone(void *stack)
 {
   // printf("IN CLONE\n");
   struct proc *p = myproc();
-  if ((uint64)stack % PGSIZE != 0 || stack == 0) {
+  if (stack == 0) {
     printf("clone: stack must be page-aligned and non-null\n");
     return -1;
   }

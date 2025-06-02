@@ -11,7 +11,7 @@ int
 thread_create(void *(*start_routine)(void *), void *arg)
 {
   // Allocate user stack
-  void *stack = malloc(STACK_SIZE);
+  void *stack = malloc(4096);
   if (stack == 0)
     return -1;
 
