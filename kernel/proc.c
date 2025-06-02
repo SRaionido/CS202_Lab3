@@ -125,6 +125,7 @@ found:
 
   // Need to set what thread ID and parent is
   p->thread_id = par->next_tid++;
+  // printf("ALLOC PROC THREAD: PID %d, TID %d\n", p->pid, p->thread_id);
   // par->next_tid = par->thread_id + 1; // Increment parent's next thread ID
   p->parent = par;
 
@@ -241,7 +242,9 @@ freeproc(struct proc *p)
   // printf("GOING TO FREE PAGETABLE\n");
   if(p->thread_id == 0 && p->pagetable) {
     printf("GOING TO FREE PAGETABLE\n");
+    printf("proc_freepagetable called for pagetable %p sz=%d\n", p->pagetable, p->sz);
     proc_freepagetable(p->pagetable, p->sz);
+    printf("FREED PAGETABLE\n");
   }
   p->pagetable = 0;
   p->sz = 0;
