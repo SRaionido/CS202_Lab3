@@ -1,4 +1,6 @@
 // TO BE IMPLEMENTED - NEW USER LIBRARY
+#include "kernel/types.h"
+#include "user/user.h"
 typedef unsigned int uint;
 
 
@@ -11,3 +13,32 @@ int thread_create(void *(*start_routine)(void *), void *arg);
 void lock_init(struct lock_t *lock);
 void lock_acquire(struct lock_t *lock);
 void lock_release(struct lock_t *lock);
+
+#define STACK_SIZE 4096
+
+int
+thread_create(void *(*start_routine)(void *), void *arg)
+{
+  // Allocate user stack
+  void *stack = malloc(STACK_SIZE);
+  if (stack == 0)
+    return -1;
+
+  // clone() expects the top of the stack (stack grows down)
+  int pid = clone(stack);
+  if (pid < 0) {
+    free(stack);
+    return -1;
+  }
+
+  // Parent
+  if (pid > 0)
+    return 0;
+
+  // Child thread
+  start_routine(arg); // Run thread function
+  exit(0);
+
+  // Hopefully wont get here
+  return 0;
+}
