@@ -155,15 +155,6 @@ found:
   //   return 0;
   // }
 
-  //Set up kernel stack?
-  // p->kstack = (uint64)kalloc();
-  // if(p->kstack == 0){
-  //   kfree((void*)p->trapframe);
-  //   freeproc(p);
-  //   release(&p->lock);
-  //   return 0;
-  // }
-
   // Set up pagetable to share parent's address space
   p->pagetable = par->pagetable;
 
@@ -245,6 +236,10 @@ freeproc(struct proc *p)
     printf("proc_freepagetable called for pagetable %p sz=%d\n", p->pagetable, p->sz);
     proc_freepagetable(p->pagetable, p->sz);
     printf("FREED PAGETABLE\n");
+  }
+  else {
+    printf("FREEING THREAD TRAPFRAME\n");
+    uvmunmap(p->pagetable, TRAPFRAME - (p->thread_id * PGSIZE), 1, 0);
   }
   p->pagetable = 0;
   p->sz = 0;
@@ -817,7 +812,7 @@ int clone(void *stack)
   *(nt->trapframe) = *(p->trapframe);
 
   // TIP 2: Setting the starting address of the user stack
-  nt->trapframe->sp = (uint64)stack;
+  nt->trapframe->sp = (uint64)stack + PGSIZE;
 
   // Cause clone to return 0 in the child.
   nt->trapframe->a0 = 0;
