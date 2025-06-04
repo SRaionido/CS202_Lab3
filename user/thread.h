@@ -2,7 +2,7 @@
 #define USER_THREAD_H
 
 struct lock_t {
-  uint locked;
+    uint locked;
 };
 
 // Thread API
