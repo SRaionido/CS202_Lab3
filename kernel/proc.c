@@ -106,7 +106,6 @@ allocpid()
 static struct proc*
 allocproc_thread(struct proc *par)
 {
-  // printf("IN ALLOCPROC_THREAD\n");
   struct proc *p;
 
   for(p = proc; p < &proc[NPROC]; p++) {
@@ -125,8 +124,6 @@ found:
 
   // Need to set what thread ID and parent is
   p->thread_id = par->next_tid++;
-  // printf("ALLOC PROC THREAD: PID %d, TID %d\n", p->pid, p->thread_id);
-  // par->next_tid = par->thread_id + 1; // Increment parent's next thread ID
   p->parent = par;
 
   // Allocate a trapframe page.
@@ -147,14 +144,6 @@ found:
     return 0;
   }
 
-  // // An empty user page table.
-  // p->pagetable = proc_pagetable(p);
-  // if(p->pagetable == 0){
-  //   freeproc(p);
-  //   release(&p->lock);
-  //   return 0;
-  // }
-
   // Set up pagetable to share parent's address space
   p->pagetable = par->pagetable;
 
@@ -164,8 +153,6 @@ found:
   memset(&p->context, 0, sizeof(p->context));
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
-
-  // printf("ABOUT TO RETURN P\n");
 
   return p;
 }
@@ -230,15 +217,11 @@ freeproc(struct proc *p)
   p->trapframe = 0;
   //TIP 7: Editing freeproc to free pagetable only for parent
   // Lab 3: Updated to free only per-thread pagetable
-  // printf("GOING TO FREE PAGETABLE\n");
   if(p->thread_id == 0 && p->pagetable) {
-    // printf("GOING TO FREE PAGETABLE\n");
-    // printf("proc_freepagetable called for pagetable %p sz=%d\n", p->pagetable, p->sz);
     proc_freepagetable(p->pagetable, p->sz);
-    // printf("FREED PAGETABLE\n");
   }
   else {
-    // printf("FREEING THREAD TRAPFRAME\n");
+    // For threads, we only unmap the trapframe page
     uvmunmap(p->pagetable, TRAPFRAME - (p->thread_id * PGSIZE), 1, 0);
   }
   p->pagetable = 0;
@@ -488,24 +471,17 @@ wait(uint64 addr)
       if(pp->parent == p){
         // make sure the child isn't still in exit() or swtch().
         acquire(&pp->lock);
-
-        // printf("IN WAIT FOR LOOP - ACQUIRED LOCK\n");
-
         havekids = 1;
         if(pp->state == ZOMBIE){
           // Found one.
           pid = pp->pid;
-          // printf("FOUND A ZOMBIE PROC\n");
           if(addr != 0 && copyout(p->pagetable, addr, (char *)&pp->xstate,
                                   sizeof(pp->xstate)) < 0) {
             release(&pp->lock);
             release(&wait_lock);
-            // printf("ERROR COPYING OUT XSTATE\n");
             return -1;
           }
-          // printf("ABOUT TO FREEPROC\n");
           freeproc(pp);
-          // printf("FREED PROC\n");
           release(&pp->lock);
           release(&wait_lock);
           return pid;
@@ -781,7 +757,6 @@ void print_hello(int n)
 
 int clone(void *stack)
 {
-  // printf("IN CLONE\n");
   struct proc *p = myproc();
   if (stack == 0) {
     printf("clone: stack must be page-aligned and non-null\n");
@@ -790,19 +765,12 @@ int clone(void *stack)
 
   // TIP 3: HAPPENS IN allocproc_thread()
   struct proc *nt = allocproc_thread(p);
-  // printf("ALLOCPROC_THREAD RETURNED %p\n", nt);
   if(nt == 0) return -1;
 
   if (walkaddr(p->pagetable, (uint64)stack) == 0) {
     printf("clone: stack pointer is not mapped in user space\n");
     return -1;
   }
-
-  // if(uvmcopy(p->pagetable, nt->pagetable, p->sz) < 0){
-  //   freeproc(nt);
-  //   release(&nt->lock);
-  //   return -1;
-  // }
   nt->sz = p->sz;
 
   if(nt->trapframe == 0)
@@ -842,8 +810,6 @@ int clone(void *stack)
   release(&wait_lock);
 
   release(&nt->lock);
-
-  // printf("Thread %d created with stack at %p\n", nt->thread_id, stack);
 
   return pid;
 }
